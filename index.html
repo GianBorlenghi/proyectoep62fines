@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Uber y PedidosYa en Pergamino — Trabajo y Economía Digital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#15171b;
+    --surface:#1d2024;
+    --surface-2:#262a30;
+    --line:#33383f;
+    --text:#f5f3ee;
+    --muted:#9a9fab;
+    --py:#ff2d55;       /* PedidosYa red */
+    --py-dim:#5c1525;
+    --uber:#f5f3ee;      /* Uber white/black system */
+    --uber-dim:#2b2e33;
+    --gold:#e0a23d;      /* Pergamino / campo */
+    --gold-dim:#3a2c14;
+    --green:#3ddc84;
+    --radius:14px;
+    --shadow-sm:0 6px 16px -8px rgba(0,0,0,0.45);
+    --shadow-md:0 18px 40px -16px rgba(0,0,0,0.55);
+    --shadow-glow:0 0 0 1px rgba(255,45,85,0.18), 0 18px 40px -16px rgba(255,45,85,0.25);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  h1,h2,h3,.display{font-family:'Space Grotesk',sans-serif;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  a{color:inherit;}
+  ::selection{background:var(--py);color:#fff;}
+
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px;}
+
+  /* ---------- background texture: faint street grid ---------- */
+  .grid-bg{
+    position:fixed;inset:0;z-index:-1;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:64px 64px;
+    opacity:0.07;
+    -webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 0%, #000 0%, transparent 75%);
+            mask-image:radial-gradient(ellipse 80% 60% at 50% 0%, #000 0%, transparent 75%);
+  }
+
+  .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease, transform .7s cubic-bezier(.16,1,.3,1);}
+  .reveal.in{opacity:1;transform:translateY(0);}
+
+  /* ---------- NAV BAR ---------- */
+  .nav{
+    position:fixed;top:0;left:0;right:0;z-index:80;
+    background:rgba(21,23,27,0.7);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid rgba(255,255,255,0.07);
+  }
+  .nav-inner{display:flex;align-items:center;justify-content:space-between;height:62px;}
+  .brand{
+    display:flex;align-items:center;gap:9px;text-decoration:none;
+    font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:14.5px;letter-spacing:-0.01em;
+  }
+  .brand-mark{width:9px;height:9px;border-radius:3px;background:var(--py);box-shadow:0 0 0 3px var(--py-dim);flex:none;}
+  .brand .sep{color:var(--muted);font-weight:400;margin:0 1px;}
+  .nav-links{display:flex;align-items:center;gap:30px;}
+  .nav-links a{
+    font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);text-decoration:none;transition:color .15s ease;position:relative;
+  }
+  .nav-links a:hover{color:var(--text);}
+  .nav-cta{
+    font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.04em;
+    color:var(--gold);border:1px solid var(--gold-dim);padding:6px 12px;border-radius:999px;
+    text-decoration:none;display:flex;align-items:center;gap:6px;
+  }
+  @media(max-width:680px){.nav-links a:not(.nav-cta){display:none;}}
+
+  /* ---------- NAV / route spine label ---------- */
+  .stop-label{
+    display:flex;align-items:center;gap:12px;
+    margin:0 0 30px 0;
+  }
+  .stop-dot{
+    width:10px;height:10px;border-radius:50%;
+    background:var(--py);
+    box-shadow:0 0 0 5px var(--py-dim);
+    flex:none;
+  }
+  .stop-label span{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);
+  }
+  .stop-label::after{
+    content:"";flex:1;height:1px;
+    background:linear-gradient(90deg, var(--line), transparent);
+  }
+
+  /* ---------- HERO ---------- */
+  header.hero{
+    min-height:100svh;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:140px 0 60px;
+    position:relative;
+  }
+  header.hero::before{
+    content:"";
+    position:absolute;top:-10%;left:50%;transform:translateX(-50%);
+    width:900px;height:600px;max-width:160vw;
+    background:radial-gradient(closest-side, rgba(255,45,85,0.10), transparent 70%);
+    pointer-events:none;z-index:-1;
+  }
+  .hero-route{
+    position:absolute;right:-10px;top:90px;width:300px;height:auto;
+    opacity:0.6;pointer-events:none;
+  }
+  .hero-route .dash-anim{stroke-dasharray:6 14;animation:dashmove 7s linear infinite;}
+  @keyframes dashmove{to{stroke-dashoffset:-300;}}
+  @media(max-width:980px){.hero-route{display:none;}}
+
+  .badge-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:30px;}
+  .pill{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;letter-spacing:.04em;
+    padding:8px 15px;border-radius:999px;
+    border:1px solid var(--line);
+    display:flex;align-items:center;gap:7px;
+    color:var(--muted);
+    background:rgba(29,32,36,0.7);
+    backdrop-filter:blur(6px);
+  }
+  .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;flex:none;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+  .hero h1{
+    font-size:clamp(2.6rem, 7vw, 5.4rem);
+    line-height:0.98;
+    font-weight:700;
+    margin:0 0 24px 0;
+    letter-spacing:-0.025em;
+  }
+  .hero h1 .red{color:var(--py);}
+  .hero h1 .pale{color:var(--muted);font-weight:500;}
+
+  .hero p.lead{
+    max-width:560px;
+    font-size:1.15rem;
+    color:#cfd2d8;
+    line-height:1.6;
+    margin:0 0 38px 0;
+  }
+  .hero p.lead b{color:var(--text);}
+
+  .cta-row{display:flex;gap:14px;flex-wrap:wrap;}
+  .btn{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:0.95rem;
+    padding:14px 27px;
+    border-radius:999px;
+    border:1px solid transparent;
+    cursor:pointer;
+    text-decoration:none;
+    display:inline-flex;align-items:center;gap:8px;
+    transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+  .btn:hover{transform:translateY(-2px);}
+  .btn:focus-visible{outline:2px solid var(--gold);outline-offset:3px;}
+  .btn-primary{background:var(--py);color:#fff;box-shadow:0 14px 30px -12px rgba(255,45,85,0.55);}
+  .btn-primary:hover{box-shadow:0 18px 36px -10px rgba(255,45,85,0.7);}
+  .btn-ghost{background:transparent;border-color:var(--line);color:var(--text);}
+  .btn-ghost:hover{border-color:var(--gold);}
+
+  /* live counter strip */
+  .stat-strip{
+    margin-top:68px;
+    display:grid;grid-template-columns:repeat(auto-fit, minmax(160px,1fr));
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+    box-shadow:var(--shadow-sm);
+  }
+  .stat-cell{background:var(--surface);padding:22px 22px;transition:background .2s ease;}
+  .stat-cell:hover{background:var(--surface-2);}
+  .stat-cell .num{font-family:'JetBrains Mono',monospace;font-size:1.8rem;font-weight:700;color:var(--gold);}
+  .stat-cell .lbl{font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.4;}
+
+  /* ---------- SECTION generic ---------- */
+  section{padding:96px 0;position:relative;}
+  .section-head{max-width:640px;margin-bottom:50px;}
+  .section-head h2{font-size:clamp(1.8rem,4vw,2.6rem);margin:0 0 14px 0;font-weight:700;letter-spacing:-0.015em;}
+  .section-head p{color:var(--muted);font-size:1.05rem;line-height:1.6;margin:0;}
+
+  /* ---------- EPISODES ---------- */
+  .episodes{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  @media(max-width:760px){.episodes{grid-template-columns:1fr;}}
+  .ep-card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:24px;
+    box-shadow:var(--shadow-sm);
+    transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  }
+  .ep-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md);border-color:#3d434b;}
+  .ep-card .ep-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:10px;}
+  .ep-card h3{margin:0;font-size:1.2rem;line-height:1.28;letter-spacing:-0.01em;}
+  .ep-card .dur{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold);white-space:nowrap;border:1px solid var(--gold-dim);padding:3px 9px;border-radius:999px;flex:none;}
+  .ep-card .author{color:var(--muted);font-size:13.5px;margin:0 0 18px 0;}
+  .ep-card iframe{border-radius:10px;display:block;width:100%;}
+
+  /* ---------- STATS / Pergamino en cifras ---------- */
+  .lanes{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
+  @media(max-width:760px){.lanes{grid-template-columns:1fr;}}
+  .lane{
+    border-radius:var(--radius);
+    padding:28px 26px;
+    border:1px solid var(--line);
+    box-shadow:var(--shadow-sm);
+    transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .lane:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);}
+  .lane.py{background:linear-gradient(165deg, var(--py-dim) 0%, var(--surface) 42%);}
+  .lane.uber{background:linear-gradient(165deg, var(--uber-dim) 0%, var(--surface) 42%);}
+  .lane-head{display:flex;align-items:center;gap:10px;margin-bottom:22px;}
+  .lane-head .sw{width:12px;height:12px;border-radius:3px;}
+  .lane.py .sw{background:var(--py);}
+  .lane.uber .sw{background:var(--text);}
+  .lane-head h3{margin:0;font-size:1.35rem;letter-spacing:-0.01em;}
+  .fact{
+    display:flex;gap:16px;
+    padding:15px 0;
+    border-top:1px solid rgba(255,255,255,0.06);
+  }
+  .fact:first-of-type{border-top:none;padding-top:0;}
+  .fact .fnum{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;font-size:1.05rem;
+    min-width:68px;line-height:1.25;
+  }
+  .lane.py .fnum{color:var(--py);}
+  .lane.uber .fnum{color:var(--gold);}
+  .fact .ftxt{color:#dadce1;font-size:14.5px;line-height:1.55;}
+
+  .debate-box{
+    margin-top:30px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:26px;
+    background:var(--surface);
+    box-shadow:var(--shadow-sm);
+    position:relative;
+    overflow:hidden;
+  }
+  .debate-box::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+    background:linear-gradient(180deg, var(--gold), var(--py));
+  }
+  .debate-box h4{margin:0 0 12px 0;font-size:1.08rem;font-family:'Space Grotesk',sans-serif;letter-spacing:-0.005em;}
+  .debate-box p{margin:0 0 0 0;color:var(--muted);font-size:14.5px;line-height:1.68;}
+  .debate-box p + p{margin-top:11px;}
+
+  .source-note{margin-top:16px;font-size:11.5px;color:#6c717c;font-family:'JetBrains Mono',monospace;letter-spacing:.02em;}
+
+  /* ---------- GAME ---------- */
+  .game-shell{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:20px;
+    overflow:hidden;
+    box-shadow:var(--shadow-md);
+    position:relative;
+  }
+  .game-shell::before{
+    content:"";position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg, var(--py), var(--gold));
+  }
+  .game-top{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:18px 24px;border-bottom:1px solid var(--line);
+    background:var(--surface-2);
+    flex-wrap:wrap;gap:10px;
+  }
+  .game-top .gt-title{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:12px;letter-spacing:.1em;color:var(--muted);display:flex;align-items:center;gap:8px;}
+  .hud{display:flex;gap:20px;flex-wrap:wrap;}
+  .hud div{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--muted);letter-spacing:.04em;}
+  .hud div b{color:var(--text);font-size:13.5px;}
+  .game-body{padding:36px;min-height:340px;display:flex;flex-direction:column;justify-content:center;}
+
+  .role-pick{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:600px){.role-pick{grid-template-columns:1fr;}}
+  .role-card{
+    border:1px solid var(--line);border-radius:14px;
+    padding:24px;cursor:pointer;background:var(--bg);
+    text-align:left;color:var(--text);font:inherit;
+    transition:border-color .2s, transform .2s, box-shadow .2s;
+  }
+  .role-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md);}
+  .role-card:focus-visible{outline:2px solid var(--gold);}
+  .role-card .ric{font-size:2rem;margin-bottom:12px;display:block;}
+  .role-card h4{margin:0 0 7px 0;font-family:'Space Grotesk',sans-serif;font-size:1.1rem;letter-spacing:-0.01em;}
+  .role-card p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.55;}
+  .role-card.py-role:hover{border-color:var(--py);}
+  .role-card.uber-role:hover{border-color:var(--gold);}
+
+  .scenario-eyebrow{
+    font-family:'JetBrains Mono',monospace;font-size:11.5px;
+    color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;
+  }
+  .scenario h3{margin:0 0 13px 0;font-size:1.45rem;letter-spacing:-0.01em;}
+  .scenario p{color:#cfd2d8;line-height:1.65;margin:0 0 26px 0;}
+  .choices{display:flex;flex-direction:column;gap:10px;}
+  .choice-btn{
+    text-align:left;
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:15px 19px;
+    color:var(--text);
+    font:inherit;font-size:14.5px;
+    cursor:pointer;
+    display:flex;justify-content:space-between;align-items:center;gap:14px;
+    transition:border-color .18s, background .18s, transform .18s;
+  }
+  .choice-btn:hover{border-color:var(--py);background:#1a1316;transform:translateX(3px);}
+  .choice-btn:focus-visible{outline:2px solid var(--gold);}
+  .choice-btn:disabled{opacity:0.55;cursor:default;transform:none;}
+  .choice-btn .ctag{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--muted);white-space:nowrap;}
+
+  .feedback{
+    font-size:13.5px;color:var(--gold);
+    border-left:2px solid var(--gold);
+    padding-left:14px;margin-top:20px;
+    min-height:18px;line-height:1.5;
+  }
+
+  .result h3{font-size:1.65rem;margin:0 0 7px 0;letter-spacing:-0.01em;}
+  .result .sub{color:var(--muted);margin:0 0 28px 0;}
+  .result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:26px;}
+  @media(max-width:600px){.result-grid{grid-template-columns:1fr;}}
+  .result-cell{background:var(--bg);padding:19px;}
+  .result-cell .rl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace;}
+  .result-cell .rv{font-family:'JetBrains Mono',monospace;font-size:1.55rem;font-weight:700;margin-top:5px;}
+  .compare-bar{margin-bottom:24px;}
+  .compare-bar .cb-label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:7px;flex-wrap:wrap;gap:6px;}
+  .cb-track{height:10px;background:var(--surface-2);border-radius:999px;overflow:hidden;position:relative;}
+  .cb-fill{height:100%;background:linear-gradient(90deg, var(--py), #ff6b8f);border-radius:999px;transition:width .8s cubic-bezier(.16,1,.3,1);}
+  .cb-ref{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--gold);}
+  .result p.note{color:#cfd2d8;font-size:14px;line-height:1.65;}
+  .replay-row{display:flex;gap:12px;margin-top:26px;flex-wrap:wrap;}
+
+  /* ---------- FOOTER ---------- */
+  footer{padding:64px 0 90px;border-top:1px solid var(--line);margin-top:50px;position:relative;}
+  footer::before{
+    content:"";position:absolute;top:-1px;left:24px;right:24px;height:1px;
+    background:linear-gradient(90deg, var(--py), var(--gold), transparent);
+  }
+  footer .foot-grid{display:flex;justify-content:space-between;gap:34px;flex-wrap:wrap;}
+  footer h4{font-family:'Space Grotesk',sans-serif;margin:0 0 11px 0;font-size:1.05rem;letter-spacing:-0.01em;}
+  footer p{color:var(--muted);font-size:13.5px;line-height:1.65;max-width:440px;margin:0;}
+  footer .credit-edit{
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold);letter-spacing:.02em;
+    border:1px solid var(--gold-dim);padding:11px 16px;border-radius:10px;margin-top:16px;display:inline-flex;
+    align-items:center;text-decoration:none;background:rgba(224,162,61,0.06);
+    transition:border-color .18s ease, background .18s ease, transform .18s ease;
+  }
+  footer .credit-edit:hover{border-color:var(--gold);background:rgba(224,162,61,0.12);transform:translateY(-2px);}
+  footer .credit-logo{width:18px;height:18px;border-radius:4px;object-fit:cover;margin-right:8px;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important;transition:none !important;}
+  }
+</style>
+</head>
+<body id="top">
+<div class="grid-bg"></div>
+
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <a href="#top" class="brand"><span class="brand-mark"></span>Trabajo<span class="sep">·</span>Digital</a>
+    <div class="nav-links">
+      <a href="#episodios">Episodios</a>
+      <a href="#cifras">Cifras</a>
+      <a href="#juego" class="nav-cta">🕹️ Simulador</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero wrap">
+  <svg class="hero-route" viewBox="0 0 320 460" aria-hidden="true">
+    <path d="M30 420 C 100 360, 40 280, 150 250 S 280 150, 260 30" stroke="#33383f" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path class="dash-anim" d="M30 420 C 100 360, 40 280, 150 250 S 280 150, 260 30" stroke="#ff2d55" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.8"/>
+    <circle cx="30" cy="420" r="6" fill="#ff2d55"/>
+    <circle cx="260" cy="30" r="6" fill="#e0a23d"/>
+  </svg>
+  <div class="badge-row">
+    <span class="pill"><span class="dot"></span> Proyecto escolar · Pergamino</span>
+    <span class="pill">🎙️ Podcast incluido</span>
+    <span class="pill">🕹️ Simulador interactivo</span>
+  </div>
+  <h1>Pedí, viajá,<br><span class="red">trabajá.</span><br><span class="pale">Uber y PedidosYa en Pergamino.</span></h1>
+  <p class="lead">Un trabajo sobre <b>trabajo y economía digital</b>: cómo las apps de delivery y movilidad llegaron a nuestra ciudad, qué cambiaron y qué se dice — de los repartidores, los conductores, los remiseros y los vecinos.</p>
+  <div class="cta-row">
+    <a href="#episodios" class="btn btn-primary">▶ Escuchar el podcast</a>
+    <a href="#juego" class="btn btn-ghost">🕹️ Probar el simulador</a>
+  </div>
+
+  <div class="stat-strip">
+    <div class="stat-cell"><div class="num">~15</div><div class="lbl">repartidores de PedidosYa circulando en Pergamino</div></div>
+    <div class="stat-cell"><div class="num">~40</div><div class="lbl">autos de Uber habilitados en la ciudad</div></div>
+    <div class="stat-cell"><div class="num">80%</div><div class="lbl">de los pedidos de PedidosYa son de comida</div></div>
+    <div class="stat-cell"><div class="num">7</div><div class="lbl">ciudades de la región donde Uber llegó junto a Pergamino</div></div>
+  </div>
+</header>
+
+<!-- ============ EPISODIOS ============ -->
+<section id="episodios" class="wrap">
+  <div class="stop-label reveal"><span class="stop-dot"></span><span>Parada 01 — el podcast</span></div>
+  <div class="section-head reveal">
+    <h2>Los episodios</h2>
+    <p>Grabamos dos episodios para este trabajo. Apretá play y escuchalos directamente acá.</p>
+  </div>
+  <div class="episodes">
+    <div class="ep-card reveal">
+      <div class="ep-top">
+        <h3>Trabajo y economía digital</h3>
+        <span class="dur mono">4m 04s</span>
+      </div>
+      <p class="author">por Lucia Rodríguez</p>
+      <iframe src="https://widget.spreaker.com/player?episode_id=72744297&theme=dark&playlist=false" width="100%" height="200" frameborder="0"></iframe>
+    </div>
+    <div class="ep-card reveal">
+      <div class="ep-top">
+        <h3>Mi primer episodio con Spreaker Studio</h3>
+        <span class="dur mono">3m 04s</span>
+      </div>
+      <p class="author">por Johanna Acuña</p>
+      <iframe src="https://widget.spreaker.com/player?episode_id=72744927&theme=dark&playlist=false" width="100%" height="200" frameborder="0"></iframe>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PERGAMINO EN CIFRAS ============ -->
+<section id="cifras" class="wrap">
+  <div class="stop-label reveal"><span class="stop-dot"></span><span>Parada 02 — la ciudad</span></div>
+  <div class="section-head reveal">
+    <h2>Pergamino en cifras</h2>
+    <p>Lo que encontramos investigando en medios locales sobre cómo llegaron estas dos apps a la ciudad.</p>
+  </div>
+
+  <div class="lanes">
+    <div class="lane py reveal">
+      <div class="lane-head"><span class="sw"></span><h3>PedidosYa</h3></div>
+      <div class="fact"><div class="fnum">~15</div><div class="ftxt">repartidores uniformados de rojo recorriendo el centro cuando la app se instaló en la ciudad.</div></div>
+      <div class="fact"><div class="fnum">9:30–14h<br>20–1h</div><div class="ftxt">son las franjas horarias de mayor movimiento, con turno extendido en verano.</div></div>
+      <div class="fact"><div class="fnum">80%</div><div class="ftxt">de los pedidos son de comida; el resto se reparte entre farmacias, supermercados y bebidas.</div></div>
+      <div class="fact"><div class="fnum">15–35</div><div class="ftxt">es la franja de edad de los usuarios que más pide delivery, según la propia empresa.</div></div>
+    </div>
+
+    <div class="lane uber reveal">
+      <div class="lane-head"><span class="sw"></span><h3>Uber</h3></div>
+      <div class="fact"><div class="fnum">~40</div><div class="ftxt">autos ya circulaban con la app apenas comenzó a operar en Pergamino.</div></div>
+      <div class="fact"><div class="fnum">7</div><div class="ftxt">ciudades del interior bonaerense (Pergamino, Junín, Chivilcoy, Chacabuco, Rojas, Salto y Arrecifes) sumadas casi al mismo tiempo.</div></div>
+      <div class="fact"><div class="fnum">$150k</div><div class="ftxt">de bono promocional ofrecido a conductores que completaran sus primeros 30 viajes en auto (100k en moto).</div></div>
+      <div class="fact"><div class="fnum">UberX<br>Moto</div><div class="ftxt">son las modalidades disponibles en la ciudad, sumadas a envíos de paquetes.</div></div>
+    </div>
+  </div>
+
+  <div class="debate-box reveal">
+    <h4>🟡 El debate que abrió en el Concejo</h4>
+    <p>La llegada de Uber generó tensión con las agencias de remises locales, que la consideran competencia desleal por trabajar con tarifas más bajas y sin los mismos costos de habilitación.</p>
+    <p>En el Concejo Deliberante se presentó un proyecto de ordenanza para regular el transporte por aplicaciones igual que a taxis y remises, con un período de transición y un régimen de sanciones para quienes operen sin habilitarse. El debate, a la fecha de este trabajo, seguía abierto.</p>
+  </div>
+  <p class="source-note">FUENTES: Primera Plana, Pergamino Verdad, El Tiempo de Pergamino y Diario Núcleo (notas locales, 2026).</p>
+</section>
+
+<!-- ============ JUEGO ============ -->
+<section id="juego" class="wrap">
+  <div class="stop-label reveal"><span class="stop-dot"></span><span>Parada 03 — jugá vos</span></div>
+  <div class="section-head reveal">
+    <h2>Un día trabajando con la app</h2>
+    <p>Elegí si repartís con PedidosYa o manejás con Uber por un turno en Pergamino, tomá las decisiones, y mirá cuánto te queda al final.</p>
+  </div>
+
+  <div class="game-shell reveal">
+    <div class="game-top">
+      <div class="gt-title">🕹️ SIMULADOR — UN TURNO EN PERGAMINO</div>
+      <div class="hud" id="hud" style="display:none;">
+        <div>GANADO<br><b id="hud-money">$0</b></div>
+        <div>HORAS<br><b id="hud-hours">0h</b></div>
+        <div>ENERGÍA<br><b id="hud-energy">100%</b></div>
+      </div>
+    </div>
+    <div class="game-body" id="gameBody"></div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="wrap">
+  <div class="foot-grid">
+    <div>
+      <h4>Trabajo y economía digital</h4>
+      <p>Proyecto escolar sobre el impacto de las apps de delivery y movilidad en Pergamino. Incluye podcast propio, investigación periodística local y un simulador educativo.</p>
+      <a class="credit-edit" href="https://www.facebook.com/p/CENS-453-Pergamino-100058245257272/" target="_blank" rel="noopener noreferrer">
+        <img src="images.jfif" alt="" class="credit-logo" onerror="this.style.display='none'">
+        3° GYA T·T &nbsp;|&nbsp; CENS 453 ↗
+      </a>
+    </div>
+    <div>
+      <h4>Aclaración</h4>
+      <p>Los números del simulador son una estimación simplificada con fines educativos y no representan tarifas oficiales de ninguna app. Los datos de "Pergamino en cifras" están tomados de coberturas periodísticas locales.</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   SIMULADOR — "Un día trabajando con la app"
+   ============================================================ */
+(function(){
+  const body = document.getElementById('gameBody');
+  const hud = document.getElementById('hud');
+  const hudMoney = document.getElementById('hud-money');
+  const hudHours = document.getElementById('hud-hours');
+  const hudEnergy = document.getElementById('hud-energy');
+
+  const HOURLY_MIN_WAGE = 1839; // ARS/hora, jornalizado, junio 2026 (SMVM Argentina)
+
+  let state = null;
+
+  const PY_SCENARIOS = [
+    {
+      eyebrow: "Centro de Pergamino · 20:15h",
+      title: "Arranca el turno",
+      text: "Te conectás cerca de Plaza San Martín. Aparecen dos pedidos: uno a 3 km que paga $2.500, y otro a 800 m que paga $1.800.",
+      choices: [
+        { label: "Ir por el pedido lejano", tag: "+$2.500 · 0.6h", money: 2500, hours: 0.6, energy: -15, feedback: "Más plata, pero más tiempo y cansancio arriba de la bici." },
+        { label: "Ir por el pedido cercano", tag: "+$1.800 · 0.2h", money: 1800, hours: 0.2, energy: -5, feedback: "Menos plata, pero podés encadenar otro pedido enseguida." }
+      ]
+    },
+    {
+      eyebrow: "21:40h · Empieza a lloviznar",
+      title: "Se larga la lluvia",
+      text: "La app activa un recargo por lluvia. ¿Seguís pedaleando o parás a esperar que pase bajo un alero?",
+      choices: [
+        { label: "Seguir trabajando con recargo", tag: "+$3.000 · 0.5h", money: 3000, hours: 0.5, energy: -20, feedback: "Ganás más, pero mojado, cansado y con más riesgo en la calle." },
+        { label: "Parar a esperar", tag: "+$0 · 0.5h", money: 0, hours: 0.5, energy: -5, feedback: "Perdés tiempo de trabajo, pero llegás entero al resto del turno." }
+      ]
+    },
+    {
+      eyebrow: "22:50h · Imprevisto",
+      title: "Se pincha la rueda",
+      text: "A mitad de turno, la rueda se pincha cerca de la terminal. Es un gasto que sale de tu bolsillo, no de la app.",
+      choices: [
+        { label: "Arreglarla en el momento", tag: "−$4.000 · 0.4h", money: -4000, hours: 0.4, energy: -10, feedback: "Cortás el turno un rato, pero seguís el resto de la noche sin problemas." },
+        { label: "Seguir despacio y arreglarla mañana", tag: "−$1.000 ahora", money: -1000, hours: 0.1, energy: -15, feedback: "Ahorrás tiempo hoy, pero la rueda puede terminar de romperse y salir más caro." }
+      ]
+    },
+    {
+      eyebrow: "23:30h · Mala suerte",
+      title: "Un cliente te califica injusto",
+      text: "El cliente no estaba en la dirección que puso. Esperás igual y te deja 1 estrella. Eso afecta qué pedidos te ofrece la app después.",
+      choices: [
+        { label: "Reclamar en la app y seguir", tag: "0.1h extra", money: 0, hours: 0.1, energy: -5, feedback: "No siempre responden rápido, pero queda registrado el reclamo." },
+        { label: "Dejar el pedido y rajar", tag: "ahorra tiempo, baja más el puntaje", money: 0, hours: 0, energy: -2, feedback: "Ganás minutos, pero tu calificación baja más todavía." }
+      ]
+    },
+    {
+      eyebrow: "00:20h · Último tramo",
+      title: "El turno termina a la 1",
+      text: "Llevás casi cuatro horas en la calle. Aparece un pedido más, lejos, justo cuando ya estás muy cansado.",
+      choices: [
+        { label: "Aceptar uno más", tag: "+$2.200 · 0.5h", money: 2200, hours: 0.5, energy: -25, feedback: "Cerrás la noche con más plata, pero llegás a casa muy cansado." },
+        { label: "Desconectarte y volver a casa", tag: "+$0 · descansás", money: 0, hours: 0, energy: 15, feedback: "Cortás a tiempo. Mañana arrancás con más energía." }
+      ]
+    }
+  ];
+
+  const UBER_SCENARIOS = [
+    {
+      eyebrow: "Centro de Pergamino · 9:00h",
+      title: "Arranca el turno",
+      text: "Te conectás con el auto cerca de la terminal. Te ofrecen un viaje corto dentro del centro o uno largo hacia un barrio alejado.",
+      choices: [
+        { label: "Viaje corto en el centro", tag: "+$1.900 · 0.2h", money: 1900, hours: 0.2, energy: -5, feedback: "Rápido y seguido, ideal para encadenar varios viajes cortos." },
+        { label: "Viaje largo a un barrio alejado", tag: "+$4.300 · 0.5h", money: 4300, hours: 0.5, energy: -12, feedback: "Paga mejor, pero después tenés que volver vacío hasta el centro." }
+      ]
+    },
+    {
+      eyebrow: "11:30h · La app te avisa",
+      title: "Promo de los primeros 30 viajes",
+      text: "Te falta poco para llegar a los 30 viajes del mes y cobrar el bono de $150.000. ¿Forzás el ritmo hoy para llegar antes?",
+      choices: [
+        { label: "Acelerar el ritmo hoy", tag: "+2h extra de turno", money: 0, hours: 2, energy: -35, feedback: "Te acerca al bono, pero es una jornada bastante más larga de lo planeado." },
+        { label: "Seguir tu ritmo normal", tag: "sin cambios", money: 0, hours: 0, energy: 0, feedback: "Vas a llegar al bono igual, solo que un poco más adelante en el mes." }
+      ]
+    },
+    {
+      eyebrow: "14:10h · En la fila de la terminal",
+      title: "Tensión con los remises",
+      text: "Un remisero te reclama por trabajar en la parada sin la misma habilitación que ellos. El cliente está esperando arriba del auto.",
+      choices: [
+        { label: "Explicar y seguir el viaje", tag: "0.1h extra", money: 0, hours: 0.1, energy: -8, feedback: "Se arma una discusión corta, pero te vas con el pasajero igual." },
+        { label: "Moverte a otra esquina", tag: "evitás el conflicto", money: 0, hours: 0.05, energy: -3, feedback: "Esquivás la tensión, aunque el debate de fondo sigue sin resolverse." }
+      ]
+    },
+    {
+      eyebrow: "17:00h · Control municipal",
+      title: "Piden la documentación",
+      text: "Hay un control de tránsito. Te piden papeles mientras se discute la ordenanza que regularía a las apps como a taxis y remises.",
+      choices: [
+        { label: "Mostrar todo y esperar", tag: "0.3h de demora", money: 0, hours: 0.3, energy: -5, feedback: "Está todo en orden, pero perdés tiempo de viaje mientras revisan." },
+        { label: "Evitar esa zona en los próximos viajes", tag: "rutas más largas", money: -500, hours: 0.1, energy: -3, feedback: "Esquivás el control, pero gastás un poco más de nafta dando la vuelta." }
+      ]
+    },
+    {
+      eyebrow: "20:40h · Último tramo",
+      title: "El día se hace largo",
+      text: "Ya llevás varias horas manejando. Aparece un último viaje justo cuando estás por desconectarte.",
+      choices: [
+        { label: "Tomar el último viaje", tag: "+$3.100 · 0.4h", money: 3100, hours: 0.4, energy: -20, feedback: "Cerrás el día con un poco más, pero llegás bastante cansado." },
+        { label: "Desconectarte ahora", tag: "+$0 · descansás", money: 0, hours: 0, energy: 15, feedback: "Cortás a tiempo y llegás a casa con energía de sobra." }
+      ]
+    }
+  ];
+
+  function fmt(n){
+    return '$' + Math.round(n).toLocaleString('es-AR');
+  }
+
+  function updateHud(){
+    hudMoney.textContent = fmt(state.money);
+    hudHours.textContent = state.hours.toFixed(1) + 'h';
+    hudEnergy.textContent = Math.max(0, Math.round(state.energy)) + '%';
+  }
+
+  function startRolePick(){
+    hud.style.display = 'none';
+    body.innerHTML = `
+      <div class="role-pick">
+        <button class="role-card py-role" data-role="py">
+          <span class="ric">🛵</span>
+          <h4>Repartir con PedidosYa</h4>
+          <p>Turno de tarde-noche en bici/moto por el centro de Pergamino. Pedidos cortos, propinas, lluvia, calle.</p>
+        </button>
+        <button class="role-card uber-role" data-role="uber">
+          <span class="ric">🚗</span>
+          <h4>Manejar con Uber</h4>
+          <p>Turno de día en auto. Viajes cortos y largos, la promo de los 30 viajes, controles y tensión con los remises.</p>
+        </button>
+      </div>
+    `;
+    body.querySelectorAll('.role-card').forEach(btn=>{
+      btn.addEventListener('click', ()=> beginGame(btn.dataset.role));
+    });
+  }
+
+  function beginGame(role){
+    state = {
+      role: role,
+      scenarios: role === 'py' ? PY_SCENARIOS : UBER_SCENARIOS,
+      index: 0,
+      money: 0,
+      hours: 0,
+      energy: 100
+    };
+    hud.style.display = 'flex';
+    updateHud();
+    renderScenario();
+  }
+
+  function renderScenario(){
+    const sc = state.scenarios[state.index];
+    body.innerHTML = `
+      <div class="scenario">
+        <div class="scenario-eyebrow">${sc.eyebrow}</div>
+        <h3>${sc.title}</h3>
+        <p>${sc.text}</p>
+        <div class="choices"></div>
+        <div class="feedback" id="feedback"></div>
+      </div>
+    `;
+    const choicesEl = body.querySelector('.choices');
+    sc.choices.forEach(choice=>{
+      const b = document.createElement('button');
+      b.className = 'choice-btn';
+      b.innerHTML = `<span>${choice.label}</span><span class="ctag mono">${choice.tag}</span>`;
+      b.addEventListener('click', ()=> applyChoice(choice));
+      choicesEl.appendChild(b);
+    });
+  }
+
+  function applyChoice(choice){
+    state.money += choice.money;
+    state.hours += choice.hours;
+    state.energy = Math.min(100, state.energy + choice.energy);
+    updateHud();
+    document.getElementById('feedback').textContent = choice.feedback;
+    document.querySelectorAll('.choice-btn').forEach(b=> b.disabled = true);
+    setTimeout(()=>{
+      state.index++;
+      if(state.index >= state.scenarios.length){
+        renderResult();
+      } else {
+        renderScenario();
+      }
+    }, 5000);
+  }
+
+  function renderResult(){
+    const netPerHour = state.hours > 0 ? state.money / state.hours : 0;
+    const pct = Math.max(4, Math.min(100, (netPerHour / HOURLY_MIN_WAGE) * 100));
+    const roleLabel = state.role === 'py' ? 'repartiendo con PedidosYa' : 'manejando con Uber';
+
+    let verdict;
+    if(netPerHour >= HOURLY_MIN_WAGE){
+      verdict = "Este turno te dejó por encima del valor de referencia de la hora mínima. No siempre es así: depende de la cantidad de pedidos, el clima y los imprevistos.";
+    } else if (netPerHour >= HOURLY_MIN_WAGE * 0.6) {
+      verdict = "Quedaste cerca del valor de referencia, pero por debajo. Así se ve la idea de \"flexibilidad\": vos elegís cuándo trabajar, pero el ingreso por hora no está garantizado.";
+    } else {
+      verdict = "El turno rindió bastante menos que el valor de referencia de la hora mínima. Es justo el tipo de dato que suele aparecer en el debate sobre trabajo en plataformas: ¿flexibilidad o precariedad?";
+    }
+
+    body.innerHTML = `
+      <div class="result">
+        <h3>Terminó el turno</h3>
+        <p class="sub">Así te fue ${roleLabel} hoy en Pergamino.</p>
+        <div class="result-grid">
+          <div class="result-cell"><div class="rl">Ganado</div><div class="rv">${fmt(state.money)}</div></div>
+          <div class="result-cell"><div class="rl">Horas</div><div class="rv">${state.hours.toFixed(1)}h</div></div>
+          <div class="result-cell"><div class="rl">$/hora</div><div class="rv">${fmt(netPerHour)}</div></div>
+        </div>
+        <div class="compare-bar">
+          <div class="cb-label"><span>Tu $/hora de hoy</span><span>Hora mínima de referencia: ${fmt(HOURLY_MIN_WAGE)}</span></div>
+          <div class="cb-track">
+            <div class="cb-fill" style="width:${pct}%"></div>
+            <div class="cb-ref" style="left:100%"></div>
+          </div>
+        </div>
+        <p class="note">${verdict}</p>
+        <p class="note" style="color:#6c717c;font-size:12.5px;">*Simulación simplificada con fines educativos. La hora de referencia toma el valor jornalizado del Salario Mínimo, Vital y Móvil de junio 2026. No representa tarifas reales de ninguna app.</p>
+        <div class="replay-row">
+          <button class="btn btn-primary" id="replaySame">🔁 Jugar de nuevo</button>
+          <button class="btn btn-ghost" id="replayOther">${state.role === 'py' ? '🚗 Probar como Uber' : '🛵 Probar como PedidosYa'}</button>
+        </div>
+      </div>
+    `;
+    document.getElementById('replaySame').addEventListener('click', startRolePick);
+    document.getElementById('replayOther').addEventListener('click', ()=> beginGame(state.role === 'py' ? 'uber' : 'py'));
+  }
+
+  startRolePick();
+})();
+
+/* ---------- Scroll reveal ---------- */
+(function(){
+  const items = document.querySelectorAll('.reveal');
+  if(!('IntersectionObserver' in window)){
+    items.forEach(el=> el.classList.add('in'));
+    return;
+  }
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        entry.target.classList.add('in');
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+  items.forEach(el=> io.observe(el));
+})();
+</script>
+</body>
+</html>
